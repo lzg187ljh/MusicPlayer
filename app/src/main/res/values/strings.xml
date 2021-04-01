@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">finalProject</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="playlist_fragment">Playlist</string>
+    <string name="album_fragment">Album</string>
+    <string name="songTitle">songTitle</string>
+</resources>
