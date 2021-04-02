@@ -70,9 +70,6 @@ public class MainActivity extends AppCompatActivity {
         mSeekBarVol = findViewById(R.id.seekBarVol);
 
         // creating ArrayLists to store our songs
-//        final ArrayList<Integer> songUrls = new ArrayList<>();
-//        songUrls.add(0, R.raw.gavattes);
-//        songUrls.add(1, R.raw.ouverture);
         final ArrayList<String> songTitles = new ArrayList<>();
         final ArrayList<String> songArtists = new ArrayList<>();
         final ArrayList<String> songUrls = new ArrayList<>();
