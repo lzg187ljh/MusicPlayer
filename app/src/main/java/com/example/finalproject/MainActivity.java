@@ -8,11 +8,14 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.annotation.SuppressLint;
@@ -31,9 +34,12 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.net.URL;
 import java.util.ArrayList;
 
@@ -48,8 +54,14 @@ public class MainActivity extends AppCompatActivity {
     private Runnable runnable;
     private AudioManager mAudioManager;
     int currentIndex = 0;
+    boolean fromList;
     DatabaseReference myRef;
-
+    // creating ArrayLists to store our songs
+//    final ArrayList<String> songTitles = new ArrayList<>();
+//    final ArrayList<String> songArtists = new ArrayList<>();
+//    final ArrayList<String> songUrls = new ArrayList<>();
+//    final ArrayList<String> imgUrls = new ArrayList<>();
+    final ArrayList<Music> songs = new ArrayList<Music>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,12 +80,14 @@ public class MainActivity extends AppCompatActivity {
         imageView = findViewById(R.id.songCover);
         mSeekBarTime = findViewById(R.id.seekBar);
         mSeekBarVol = findViewById(R.id.seekBarVol);
+        fromList = false;
 
-        // creating ArrayLists to store our songs
-        final ArrayList<String> songTitles = new ArrayList<>();
-        final ArrayList<String> songArtists = new ArrayList<>();
-        final ArrayList<String> songUrls = new ArrayList<>();
-        final ArrayList<String> imgUrls = new ArrayList<>();
+        // getting values from playlist.java
+        Intent intent = getIntent();
+        if(intent.getStringExtra(playlist.EXTRA_MESSAGE)!=null){
+            currentIndex = Integer.parseInt(intent.getStringExtra(playlist.EXTRA_MESSAGE));
+            fromList = true;
+        }
 
         //fetch data from firebase
         FirebaseDatabase database = FirebaseDatabase.getInstance();
@@ -83,12 +97,18 @@ public class MainActivity extends AppCompatActivity {
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 // literate snapshot child
                 for(DataSnapshot ds: snapshot.getChildren()){
-                    songTitles.add(ds.child("songtitles").getValue(String.class));
-                    songArtists.add(ds.child("songartists").getValue(String.class));
-                    songUrls.add(ds.child("songurls").getValue(String.class));
-                    imgUrls.add(ds.child("imgurls").getValue(String.class));
+//                    songTitles.add(ds.child("songtitles").getValue(String.class));
+//                    songArtists.add(ds.child("songartists").getValue(String.class));
+//                    songUrls.add(ds.child("songurls").getValue(String.class));
+//                    imgUrls.add(ds.child("imgurls").getValue(String.class));
+                    songs.add(new Music(
+                            ds.child("songtitles").getValue(String.class),
+                            ds.child("songartists").getValue(String.class),
+                            ds.child("songurls").getValue(String.class),
+                            ds.child("imgurls").getValue(String.class)
+                    ));
                 }
-                Log.v("onCreate : List size", String.valueOf(songUrls.size()));
+                Log.v("onCreate : List size", String.valueOf(songs.size()));
 
                 try{
                     if(mMediaPlayer.isPlaying()){
@@ -96,19 +116,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }catch (Exception e){}
 
-                // intializing mediaplayer
-                try {
-                    mMediaPlayer = new MediaPlayer();
-                    //Log.v("onCreate : currentIndex", String.valueOf(currentIndex));
-                    //Log.v("onCreate : Url", songUrls.get(currentIndex));
-                    songTitleView.setText(songTitles.get(currentIndex));
-                    songArtistView.setText(songArtists.get(currentIndex));
-                    mMediaPlayer.setDataSource(songUrls.get(currentIndex));
-                    new DownLoadImageTask(imageView).execute(imgUrls.get(currentIndex));
-                    mMediaPlayer.prepare();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                initializeMusicPlayer();
             }
 
             @Override
@@ -149,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
         //above seekbar volume
         //
 
+
         play.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -174,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
                     play.setImageResource(R.drawable.ic_pause);
                 }
 
-                if (currentIndex < songUrls.size() - 1) {
+                if (currentIndex < songs.size() - 1) {
                     currentIndex++;
                 } else {
                     currentIndex = 0;
@@ -184,23 +193,7 @@ public class MainActivity extends AppCompatActivity {
                     mMediaPlayer.stop();
                 }
 
-                //mMediaPlayer = MediaPlayer.create(getApplicationContext(), songUrls.get(currentIndex));
-                try {
-                    mMediaPlayer = new MediaPlayer();
-                    Log.v("next: currentIndex", String.valueOf(currentIndex));
-                    Log.v("next: URL", songUrls.get(currentIndex));
-                    songTitleView.setText(songTitles.get(currentIndex));
-                    songArtistView.setText(songArtists.get(currentIndex));
-                    mMediaPlayer.setDataSource(songUrls.get(currentIndex));
-                    new DownLoadImageTask(imageView).execute(imgUrls.get(currentIndex));
-                    mMediaPlayer.prepare();
-                    mMediaPlayer.start();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                //mMediaPlayer.start();
-                seekBarUpdate();
-
+                changeMusic();
             }
         });
 
@@ -216,32 +209,108 @@ public class MainActivity extends AppCompatActivity {
                 if (currentIndex > 0) {
                     currentIndex--;
                 } else {
-                    currentIndex = songUrls.size() - 1;
+                    currentIndex = songs.size() - 1;
                 }
                 if (mMediaPlayer.isPlaying()) {
                     mMediaPlayer.stop();
                 }
 
-                //mMediaPlayer = MediaPlayer.create(getApplicationContext(), songUrls.get(currentIndex));
-                try {
-                    mMediaPlayer = new MediaPlayer();
-                    Log.v("pre: currentIndex", String.valueOf(currentIndex));
-                    Log.v("pre: URL", songUrls.get(currentIndex));
-                    songTitleView.setText(songTitles.get(currentIndex));
-                    songArtistView.setText(songArtists.get(currentIndex));
-                    mMediaPlayer.setDataSource(songUrls.get(currentIndex));
-                    new DownLoadImageTask(imageView).execute(imgUrls.get(currentIndex));
-                    mMediaPlayer.prepare();
-                    mMediaPlayer.start();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                //mMediaPlayer.start();
-                seekBarUpdate();
-
+                changeMusic();
             }
         });
     }
+
+    private void initializeMusicPlayer() {
+        // intializing mediaplayer
+        try {
+            mMediaPlayer = new MediaPlayer();
+            //Log.v("onCreate : currentIndex", String.valueOf(currentIndex));
+            //Log.v("onCreate : Url", songUrls.get(currentIndex));
+            songTitleView.setText(songs.get(currentIndex).getSongTitles());
+            songArtistView.setText(songs.get(currentIndex).getSongArtist());
+            mMediaPlayer.setDataSource(songs.get(currentIndex).getSongUrl());
+            new DownLoadImageTask(imageView).execute(songs.get(currentIndex).getImgUrl());
+            mMediaPlayer.prepare();
+            if(fromList==true){
+                mSeekBarTime.setMax(mMediaPlayer.getDuration());
+                if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
+                    mMediaPlayer.pause();
+                    play.setImageResource(R.drawable.ic_play);
+                } else {
+                    mMediaPlayer.start();
+                    play.setImageResource(R.drawable.ic_pause);
+                }
+
+                seekBarUpdate();
+            }
+
+            mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    Log.v("onCompletion", "onCompletion");
+                    if (mMediaPlayer != null) {
+                        play.setImageResource(R.drawable.ic_pause);
+                    }
+
+                    if (currentIndex < songs.size() - 1) {
+                        currentIndex++;
+                    } else {
+                        currentIndex = 0;
+                    }
+
+                    if (mMediaPlayer.isPlaying()) {
+                        mMediaPlayer.stop();
+                    }
+
+                    changeMusic();
+                    seekBarUpdate();
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+    private void changeMusic() {
+        // intializing mediaplayer
+        try {
+            mMediaPlayer = new MediaPlayer();
+            //Log.v("onCreate : currentIndex", String.valueOf(currentIndex));
+            //Log.v("onCreate : Url", songUrls.get(currentIndex));
+            songTitleView.setText(songs.get(currentIndex).getSongTitles());
+            songArtistView.setText(songs.get(currentIndex).getSongArtist());
+            mMediaPlayer.setDataSource(songs.get(currentIndex).getSongUrl());
+            new DownLoadImageTask(imageView).execute(songs.get(currentIndex).getImgUrl());
+            mMediaPlayer.prepare();
+            mMediaPlayer.start();
+
+            mMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    if (mMediaPlayer != null) {
+                        play.setImageResource(R.drawable.ic_pause);
+                    }
+
+                    if (currentIndex < songs.size() - 1) {
+                        currentIndex++;
+                    } else {
+                        currentIndex = 0;
+                    }
+
+                    if (mMediaPlayer.isPlaying()) {
+                        mMediaPlayer.stop();
+                    }
+
+                    changeMusic();
+                    seekBarUpdate();
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
     public void ClickMenu(View view){
         openDrawer(drawerLayout);
@@ -352,6 +421,8 @@ public class MainActivity extends AppCompatActivity {
             imageView.setImageBitmap(result);
         }
     }
+
+
 
     private void seekBarUpdate() {
         // seekbar duration
