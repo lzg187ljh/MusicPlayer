@@ -52,11 +52,8 @@ public class playlist extends Fragment {
 
     DatabaseReference myRef;
     // creating ArrayLists to store our songs
-//    final ArrayList<String> songTitles = new ArrayList<>();
-//    final ArrayList<String> songArtists = new ArrayList<>();
-//    final ArrayList<String> songUrls = new ArrayList<>();
-//    final ArrayList<String> imgUrls = new ArrayList<>();
     final ArrayList<Music> songs = new ArrayList<Music>();
+    PlaylistAdapter adapter;
 
     public playlist() {
         // Required empty public constructor
@@ -116,18 +113,17 @@ public class playlist extends Fragment {
 
                 }
                 listView = view.findViewById(R.id.song_list);
-                final ArrayAdapter adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1,songs);
+                adapter = new PlaylistAdapter(getActivity(),R.layout.list,songs);
                 listView.setAdapter(adapter);
                 listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                     @Override
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        String item = songs.get(position);
+                        //String item = songs.get(position);
                         Intent i = new Intent(getActivity(), MainActivity.class);
                         i.putExtra(EXTRA_MESSAGE,  String.valueOf(position));
                         startActivity(i);
                     }
                 });
-                adapter.notifyDataSetChanged();
             }
 
             @Override

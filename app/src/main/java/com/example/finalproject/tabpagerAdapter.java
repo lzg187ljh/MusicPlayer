@@ -6,7 +6,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
 
 public class tabpagerAdapter extends FragmentPagerAdapter {
-    String[] tabarray = new String[] {"playlist","album"};
+    String[] tabarray = new String[] {"playlist","artist"};
     int tabnumber = 2;
 
     public tabpagerAdapter(FragmentManager fm){

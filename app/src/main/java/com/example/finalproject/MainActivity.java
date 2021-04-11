@@ -53,15 +53,14 @@ public class MainActivity extends AppCompatActivity {
     static MediaPlayer mMediaPlayer;
     private Runnable runnable;
     private AudioManager mAudioManager;
-    int currentIndex = 0;
+    static int currentIndex = 0;
+    int position = 0;
     boolean fromList;
+    boolean after_rotate;
     DatabaseReference myRef;
     // creating ArrayLists to store our songs
-//    final ArrayList<String> songTitles = new ArrayList<>();
-//    final ArrayList<String> songArtists = new ArrayList<>();
-//    final ArrayList<String> songUrls = new ArrayList<>();
-//    final ArrayList<String> imgUrls = new ArrayList<>();
     final ArrayList<Music> songs = new ArrayList<Music>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
 
         mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         // initializing views
-
         play = findViewById(R.id.play);
         prev = findViewById(R.id.prev);
         next = findViewById(R.id.next);
@@ -81,11 +79,21 @@ public class MainActivity extends AppCompatActivity {
         mSeekBarTime = findViewById(R.id.seekBar);
         mSeekBarVol = findViewById(R.id.seekBarVol);
         fromList = false;
+        after_rotate = false;
+
+        // SharedPreference get data
+        SharedPreferences sharedPreferences = this.getSharedPreferences("test", MODE_PRIVATE);
+        Log.v("sharedp test",sharedPreferences.getString("name",""));
+        after_rotate = sharedPreferences.getBoolean("after_rotate",false);
+        position = sharedPreferences.getInt("Position",0);
+        currentIndex = sharedPreferences.getInt("index",0);
 
         // getting values from playlist.java
         Intent intent = getIntent();
         if(intent.getStringExtra(playlist.EXTRA_MESSAGE)!=null){
             currentIndex = Integer.parseInt(intent.getStringExtra(playlist.EXTRA_MESSAGE));
+            // reset position
+            position = 0;
             fromList = true;
         }
 
@@ -101,13 +109,13 @@ public class MainActivity extends AppCompatActivity {
 //                    songArtists.add(ds.child("songartists").getValue(String.class));
 //                    songUrls.add(ds.child("songurls").getValue(String.class));
 //                    imgUrls.add(ds.child("imgurls").getValue(String.class));
-                    songs.add(new Music(
-                            ds.child("songtitles").getValue(String.class),
-                            ds.child("songartists").getValue(String.class),
-                            ds.child("songurls").getValue(String.class),
-                            ds.child("imgurls").getValue(String.class)
-                    ));
-                }
+                songs.add(new Music(
+                        ds.child("songtitles").getValue(String.class),
+                        ds.child("songartists").getValue(String.class),
+                        ds.child("songurls").getValue(String.class),
+                        ds.child("imgurls").getValue(String.class)
+                ));
+            }
                 Log.v("onCreate : List size", String.valueOf(songs.size()));
 
                 try{
@@ -224,6 +232,7 @@ public class MainActivity extends AppCompatActivity {
         // intializing mediaplayer
         try {
             mMediaPlayer = new MediaPlayer();
+
             //Log.v("onCreate : currentIndex", String.valueOf(currentIndex));
             //Log.v("onCreate : Url", songUrls.get(currentIndex));
             songTitleView.setText(songs.get(currentIndex).getSongTitles());
@@ -231,7 +240,8 @@ public class MainActivity extends AppCompatActivity {
             mMediaPlayer.setDataSource(songs.get(currentIndex).getSongUrl());
             new DownLoadImageTask(imageView).execute(songs.get(currentIndex).getImgUrl());
             mMediaPlayer.prepare();
-            if(fromList==true){
+            mMediaPlayer.seekTo(position);
+            if(fromList==true || after_rotate==true){
                 mSeekBarTime.setMax(mMediaPlayer.getDuration());
                 if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
                     mMediaPlayer.pause();
@@ -386,6 +396,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // player controller below
+    // AsyncTask for downloading resource
     private class DownLoadImageTask extends AsyncTask<String,Void, Bitmap> {
         ImageView imageView;
 
@@ -480,4 +491,36 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    // Plan B: save state using SharedPreferences while rotate
+    protected void onStop() {
+        SharedPreferences sharedPreferences = getSharedPreferences("test", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putInt("index",currentIndex);
+        editor.putInt("Position", mMediaPlayer.getCurrentPosition());
+        editor.putBoolean("after_rotate", true);
+        Log.v("onStop: ", "SharedPreferences");
+        editor.commit();
+        super.onStop();
+    }
+
+    // Plan A: save state using onSaveInstanceState while rotate
+//    public void onSaveInstanceState(Bundle savedInstanceState) {
+//
+//        super.onSaveInstanceState(savedInstanceState);
+//        savedInstanceState.putInt("index",currentIndex);
+//        savedInstanceState.putInt("Position", mMediaPlayer.getCurrentPosition());
+//        Log.v("OnSave Position: ", String.valueOf(mMediaPlayer.getCurrentPosition()));
+//    }
+//    @Override
+//
+//    public void onRestoreInstanceState(Bundle savedInstanceState) {
+//
+//        super.onRestoreInstanceState(savedInstanceState);
+//        after_rotate = true;
+//        position = savedInstanceState.getInt("Position");
+//        currentIndex = savedInstanceState.getInt("index");
+//        Log.v("OnRestore index: ", String.valueOf(currentIndex));
+//        Log.v("OnRestore Position: ", String.valueOf(position));
+//
+//    }
 }
