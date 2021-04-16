@@ -1,6 +1,7 @@
 package com.example.finalproject;
 
 public class Music {
+    int index_;
     String songTitle;
     String songArtist;
     String songUrl;
@@ -34,8 +35,13 @@ public class Music {
         this.imgUrl = imgUrl;
     }
 
-    public Music(String songTitle,String songArtist,String songUrl,String imgUrl) {
+    public int getIndex_()  {
+        return index_;
+    }
+
+    public Music(int index_,String songTitle,String songArtist,String songUrl,String imgUrl) {
         super();
+        this.index_ = index_;
         this.songTitle = songTitle;
         this.songArtist = songArtist;
         this.songUrl = songUrl;

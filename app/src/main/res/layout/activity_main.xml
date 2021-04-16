@@ -18,10 +18,10 @@
             <include
                 layout="@layout/main_toolbar"/>
 
-            <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            <LinearLayout
+                android:id="@+id/background_main"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                xmlns:tools="http://schemas.android.com/tools"
                 android:orientation="vertical"
                 tools:context=".MainActivity">
 
@@ -76,19 +76,35 @@
                         android:id="@+id/prev"
                         android:layout_width="80dp"
                         android:layout_height="60dp"
-                        android:src="@drawable/ic_pre"/>
+                        android:src="@drawable/ic_pre"
+                        app:tint="#FFFFFF"/>
 
                     <ImageView
                         android:id="@+id/play"
                         android:layout_width="80dp"
                         android:layout_height="80dp"
-                        android:src="@drawable/ic_play" />
+                        android:src="@drawable/ic_play"
+                        app:tint="#FFFFFF" />
                     <ImageView
                         android:id="@+id/next"
                         android:layout_width="80dp"
                         android:layout_height="60dp"
-                        android:src="@drawable/ic_next"/>
+                        android:src="@drawable/ic_next"
+                        app:tint="#FFFFFF"/>
+
+
                 </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/play_mode"
+                    android:layout_width="45dp"
+                    android:layout_height="45dp"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="-62dp"
+                    android:layout_marginRight="27dp"
+                    app:srcCompat="@drawable/playlist_play"
+                    tools:ignore="VectorDrawableCompat"
+                    app:tint="#FFFFFF"/>
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -102,21 +118,23 @@
                     <ImageView
                         android:layout_width="35dp"
                         android:layout_height="35dp"
-                        android:src="@drawable/ic_min"/>
+                        android:src="@drawable/ic_min"
+                        app:tint="#FFFFFF"/>
                     <SeekBar
                         android:id="@+id/seekBarVol"
                         android:layout_width="250dp"
                         android:layout_height="wrap_content"
                         android:layout_marginLeft="10dp"
-                        android:layout_marginRight="10dp"/>
+                        android:layout_marginRight="10dp"
+                        app:tint="#FFFFFF"/>
                     <ImageView
                         android:layout_width="35dp"
                         android:layout_height="35dp"
-                        android:src="@drawable/ic_max"/>
+                        android:src="@drawable/ic_max"
+                        app:tint="#FFFFFF"/>
                 </LinearLayout>
 
             </LinearLayout>
-
         </LinearLayout>
     </ScrollView>
 
